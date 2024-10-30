@@ -4,14 +4,16 @@ version = "0.1.0"
 description = "Asynchronous task scheduler on a remote Linux machine"
 authors = ["Sefi Antebi <sefi.antebi@gmail.com>"]
 readme = "README.md"
+packages = [
+    { include = "tasks_scheduler" }
+]
 
 [tool.poetry.dependencies]
-python = ">=3.8"
-psycopg2-binary = "^2.9.10"
+python = "^3.8"
+asyncpg = "^0.30.0"
+python-dotenv = "^1.0.0"
 paramiko = "^3.5.0"
-asyncio = "^3.4.3"
-uuid = "^1.30"
-
+psycopg2-binary = "^2.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

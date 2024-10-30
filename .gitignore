@@ -1,9 +1,10 @@
 /__pycache__
 .env
-/secret.py
+secret.py
 *.pyc
 *.log
 .DS_Store
 poetry.lock
 .vscode/
+venv
 
