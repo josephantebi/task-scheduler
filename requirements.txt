@@ -214,3 +214,7 @@ pynacl==1.5.0 ; python_version >= "3.8" \
     --hash=sha256:e46dae94e34b085175f8abb3b0aaa7da40767865ac82c928eeb9e57e1ea8a543
 uuid==1.30 ; python_version >= "3.8" \
     --hash=sha256:1f87cc004ac5120466f36c5beae48b4c48cc411968eed0eaecd3da82aa96193f
+
+asyncpg~=0.30.0
+python-dotenv~=1.0.1
+asyncssh~=2.18.0
