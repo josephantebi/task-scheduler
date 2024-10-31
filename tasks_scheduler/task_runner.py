@@ -1,4 +1,4 @@
-# task_runner.py
+# tasks_scheduler/task_runner.py
 import asyncio
 from tasks_scheduler.db_client import update_task_state, insert_task_log, update_task_log
 from tasks_scheduler.ssh_client import execute_remote_command
@@ -34,13 +34,18 @@ async def run_task(task):
                 stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await proc.communicate()
-            await update_task_log(run_id, output=stdout.decode(), error=stderr.decode(), complete=True)
-            logger.info(f"Local command executed with return code: {proc.returncode}")
+            return_code = proc.returncode
+
+            # עדכון ה- log
+            await update_task_log(run_id, output=stdout.decode(), error=stderr.decode(), return_code=str(return_code), complete=True)
+
+            if return_code == 0:
+                await update_task_state(task_name, task_due_date, 'completed')
+                logger.info(f"Local command executed successfully with return code: {return_code}")
+            else:
+                await update_task_state(task_name, task_due_date, 'failed')
+                logger.error(f"Local command failed with return code: {return_code}")
         except Exception as e:
             logger.error(f"Local command execution failed: {e}")
             await update_task_log(run_id, error=str(e), complete=True)
-
-    if not LOCAL_MODE:
-        await update_task_state(task_name, task_due_date, 'completed')
-    else:
-        await update_task_state(task_name, task_due_date, 'completed')
+            await update_task_state(task_name, task_due_date, 'failed')

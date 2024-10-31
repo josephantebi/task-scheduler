@@ -50,7 +50,7 @@ async def execute_remote_command(command, run_id):
             )
 
             await proc.wait()
-            return_code = proc.exit_status
+            return_code = str(proc.exit_status)  # Convert to string
             logger.info(f"Command executed with return code: {return_code}")
             await update_task_log(run_id, return_code=return_code, complete=True)
 
