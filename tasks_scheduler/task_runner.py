@@ -10,8 +10,6 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-LOCAL_MODE = os.getenv('LOCAL_MODE', 'False').lower() in ['true', '1', 'yes']
-
 async def run_task(task):
     """
     Runs a given task by executing its command and updating its state.
@@ -23,8 +21,16 @@ async def run_task(task):
     await update_task_state(task_name, task_due_date, 'running')
     run_id = await insert_task_log(task_name)
 
+    LOCAL_MODE = os.getenv('LOCAL_MODE', 'False').lower() in ['true', '1', 'yes']
+
     if not LOCAL_MODE:
-        await execute_remote_command(task_command, run_id)
+        try:
+            await execute_remote_command(task_command, run_id)
+            await update_task_state(task_name, task_due_date, 'completed')
+        except Exception as e:
+            logger.error(f"Remote command execution failed: {e}")
+            await update_task_log(run_id, error=str(e), complete=True)
+            await update_task_state(task_name, task_due_date, 'failed')
     else:
         logger.info(f"Executing local command: {task_command} with run_id: {run_id}")
         try:
@@ -36,7 +42,7 @@ async def run_task(task):
             stdout, stderr = await proc.communicate()
             return_code = proc.returncode
 
-            # עדכון ה- log
+            # Update the log
             await update_task_log(run_id, output=stdout.decode(), error=stderr.decode(), return_code=str(return_code), complete=True)
 
             if return_code == 0:

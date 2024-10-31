@@ -1,4 +1,4 @@
-# scheduler.py
+# tasks_scheduler/scheduler.py
 import asyncio
 from tasks_scheduler.db_client import get_pending_tasks
 from tasks_scheduler.task_runner import run_task
