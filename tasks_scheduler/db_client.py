@@ -50,11 +50,11 @@ async def update_task_log(run_id, output=None, error=None, return_code=None, com
         else:
             await conn.execute("""
                 UPDATE task_log
-                SET output = COALESCE(output, '') || $1,
-                    error = COALESCE(error, '') || $2
+                SET output = output || $1,
+                    error = error || $2
                 WHERE run_id = $3;
-            """, output, error, run_id)
-            logger.info(f"Updated task log '{run_id}' with output and error.")
+            """, output or '', error or '', run_id)
+            logger.info(f"Updated task log '{run_id}' with new output and error.")
     finally:
         await conn.close()
 

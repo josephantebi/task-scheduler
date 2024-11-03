@@ -10,6 +10,46 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+async def follow_process_output(proc, run_id):
+    """
+    Follows the stdout and stderr of a running process and updates the task log every 5 seconds.
+    """
+    output_buffer = ''
+    error_buffer = ''
+    update_interval = 5  # seconds
+
+    async def read_stream(stream, buffer, name):
+        while True:
+            line = await stream.readline()
+            if not line:
+                break
+            buffer.append(line.decode())
+            logger.info(f"{name}: {line.decode().strip()}")
+
+    stdout_buffer = []
+    stderr_buffer = []
+
+    stdout_task = asyncio.create_task(read_stream(proc.stdout, stdout_buffer, 'STDOUT'))
+    stderr_task = asyncio.create_task(read_stream(proc.stderr, stderr_buffer, 'STDERR'))
+
+    while not proc.stdout.at_eof() or not proc.stderr.at_eof():
+        await asyncio.sleep(update_interval)
+        output = ''.join(stdout_buffer)
+        error = ''.join(stderr_buffer)
+        stdout_buffer.clear()
+        stderr_buffer.clear()
+        if output or error:
+            await update_task_log(run_id, output=output, error=error)
+            logger.info(f"Updated task log '{run_id}' with new output and error.")
+
+    await asyncio.gather(stdout_task, stderr_task)
+    await proc.wait()
+    return_code = proc.returncode
+
+    # Update the log with the final return code and completion date
+    await update_task_log(run_id, return_code=str(return_code), complete=True)
+
+
 async def run_task(task):
     """
     Runs a given task by executing its command and updating its state.
@@ -39,11 +79,10 @@ async def run_task(task):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
-            stdout, stderr = await proc.communicate()
-            return_code = proc.returncode
 
-            # Update the log
-            await update_task_log(run_id, output=stdout.decode(), error=stderr.decode(), return_code=str(return_code), complete=True)
+            await follow_process_output(proc, run_id)
+
+            return_code = proc.returncode
 
             if return_code == 0:
                 await update_task_state(task_name, task_due_date, 'completed')
